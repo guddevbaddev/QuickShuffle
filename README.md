@@ -26,7 +26,7 @@ numbering are ignored:
 ⭐ Draven, Aphelios, Vex & Rell ⭐
 🐾 Poros 🐾                          # plurals are fine
 ✨ Spells ✨                          # keywords: rarities, card types, domains,
-⚙️ Gear + Top Units ⚙️              #   holo/foil, alt art, overnumbered
+⚙️ Gear + Top Units ⚙️              #   holo/foil, alt art, overnumbered; "top" = epic
 💠 Runes, Seals & Battlefields 💠
 Holo Gear                            # the scanner asks "Holo?" when it matters
 ```

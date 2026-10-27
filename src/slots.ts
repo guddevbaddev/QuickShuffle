@@ -20,7 +20,7 @@ const FIELDS = new Set(['name', 'tag', 'domain', 'type', 'rarity', 'set', 'numbe
 //   🔥 Ahri + Fizz 🔥  $13.00    -> combo slot "Ahri + Fizz"; emojis, prices and "1." numbering
 //                                  are dropped, and + / & , | "and" all join characters
 //   Epic, Holo Gear, Alt Art Runes -> keyword slots: rarity, card type, domain, holo/foil,
-//                                  alt art, overnumbered (plurals are fine)
+//                                  alt art, overnumbered (plurals are fine); "top" means epic
 //
 // Lines with "=" give exact rules:
 //
@@ -79,6 +79,8 @@ for (const r of ['common', 'uncommon', 'rare', 'epic', 'showcase', 'promo']) kw(
 for (const t of ['unit', 'spell', 'gear', 'legend', 'rune', 'battlefield', 'champion', 'signature', 'token']) kw([t, `${t}s`], 'type', t);
 for (const d of ['fury', 'calm', 'mind', 'body', 'chaos', 'order']) kw([d], 'domain', d);
 kw(['holo', 'holos', 'foil', 'foils'], 'holo', '');
+// Breaker shorthand: "Top Units" = epic units.
+kw(['top'], 'rarity', 'epic');
 kw(['alt art', 'alt arts', 'alternate art', 'alternate arts', 'alt-art', 'alt-arts'], 'name', 'alternate art');
 kw(['overnumbered', 'overnumber', 'overnumbers'], 'name', 'overnumbered');
 const FILLER = new Set(['all', 'any', 'the', 'card', 'cards', 'only', 'of']);

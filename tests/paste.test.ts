@@ -43,6 +43,9 @@ describe('pasted Spiritforged list', () => {
     expect(slotOf('Veteran Poro')).toBe('Poros');
     expect(slotOf('Blood Rush')).toBe('Spells');
     expect(slotOf("Doran's Blade")).toBe('Gear + Top Units');
+    // "Top Units" means epic units only.
+    expect(slotOf('Dunebreaker')).toBe('Gear + Top Units');
+    expect(slotOf('Ferrous Forerunner')).toBe('No slot');
     // A seal is gear, but "Seals" names it, so it beats the earlier Gear slot.
     expect(slotOf('Seal of Rage (Overnumbered)')).toBe('Runes, Seals & Battlefields');
     expect(slotOf('Sunken Temple')).toBe('Runes, Seals & Battlefields');
