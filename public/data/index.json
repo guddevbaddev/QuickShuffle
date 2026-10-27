@@ -1,0 +1,54 @@
+{
+ "game": "riftbound",
+ "generated": "2026-10-27T06:49:46.809Z",
+ "sets": [
+  {
+   "id": "OGS",
+   "name": "Origins: Proving Grounds",
+   "count": 24,
+   "released": "2025-10-31"
+  },
+  {
+   "id": "OPP",
+   "name": "Riftbound Organized Play Promotional Cards",
+   "count": 133,
+   "released": "2025-10-31"
+  },
+  {
+   "id": "PR",
+   "name": "Riftbound Promotional Cards",
+   "count": 13,
+   "released": "2025-10-31"
+  },
+  {
+   "id": "OGN",
+   "name": "Origins",
+   "count": 352,
+   "released": "2025-10-31"
+  },
+  {
+   "id": "JDG",
+   "name": "Riftbound Judge Promotional Cards",
+   "count": 3,
+   "released": "2025-12-01"
+  },
+  {
+   "id": "SFD",
+   "name": "Spiritforged",
+   "count": 288,
+   "released": "2026-02-13"
+  },
+  {
+   "id": "UNL",
+   "name": "Unleashed",
+   "count": 280,
+   "released": "2026-05-08"
+  },
+  {
+   "id": "VEN",
+   "name": "Vendetta",
+   "count": 358,
+   "released": "2026-07-31"
+  }
+ ]
+}

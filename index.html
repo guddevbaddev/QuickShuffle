@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#111318" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="icons/icon-192.png" />
+    <title>QuickShuffle</title>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">QuickShuffle</div>
+      <button id="setsButton" class="chip" type="button">Sets</button>
+    </header>
+
+    <main>
+      <section id="tab-scan" class="tab active">
+        <div class="camera" id="camera">
+          <video id="video" playsinline muted autoplay></video>
+          <div class="guide" id="guide"><span>Fill the box with the card</span></div>
+          <div class="camera-msg" id="cameraMsg">
+            <p>Tap to start the camera</p>
+            <button id="startCamera" class="primary" type="button">Start scanning</button>
+          </div>
+          <div class="camera-tools">
+            <button id="torchButton" class="round" type="button" hidden>Light</button>
+            <button id="pauseButton" class="round" type="button">Pause</button>
+          </div>
+        </div>
+
+        <div class="result" id="result">
+          <div class="result-empty">Scan a card to see its slot</div>
+        </div>
+
+        <div class="row">
+          <input id="search" type="search" placeholder="Can't scan? Type a card name…" autocomplete="off" />
+        </div>
+        <ul id="searchResults" class="cardlist"></ul>
+      </section>
+
+      <section id="tab-slots" class="tab">
+        <h2>Break slots</h2>
+        <p class="hint">
+          One slot per line, in priority order. A card goes to the first slot it matches.
+          <br /><code>Jinx</code> matches cards tagged Jinx or with Jinx in the name.
+          <br /><code>Zaun crew = ekko, viktor, tag:zaun</code> matches any listed term.
+          <br />Filters: <code>tag:</code> <code>name:</code> <code>domain:</code> <code>type:</code> <code>rarity:</code> <code>set:</code> <code>number:</code>,
+          join with <code>&amp;</code> for "all of", prefix <code>!</code> for "not".
+        </p>
+        <div class="row wrap">
+          <button id="genChampions" type="button">Fill with champions in selected sets</button>
+          <button id="genDomains" type="button">Fill with domains</button>
+        </div>
+        <textarea id="slotsText" rows="14" spellcheck="false" autocapitalize="off"></textarea>
+        <label class="field">
+          <span>Cards matching no slot go to</span>
+          <input id="fallbackName" type="text" />
+        </label>
+        <div id="slotPreview" class="preview"></div>
+      </section>
+
+      <section id="tab-log" class="tab">
+        <div class="row spread">
+          <h2>Scanned <span id="logCount"></span></h2>
+          <div class="row">
+            <button id="copyLog" type="button">Copy</button>
+            <button id="clearLog" class="danger" type="button">Clear</button>
+          </div>
+        </div>
+        <div id="slotTotals" class="totals"></div>
+        <ul id="logList" class="cardlist"></ul>
+      </section>
+
+      <section id="tab-settings" class="tab">
+        <h2>Settings</h2>
+        <label class="field">
+          <span>Match strictness <b id="thresholdValue"></b></span>
+          <input id="threshold" type="range" min="0.45" max="0.85" step="0.01" />
+          <small>Lower accepts blurry scans faster; higher avoids wrong matches.</small>
+        </label>
+        <label class="check"><input id="soundOn" type="checkbox" /> Beep on scan</label>
+        <label class="check"><input id="vibrateOn" type="checkbox" /> Vibrate on scan</label>
+        <label class="check"><input id="speakOn" type="checkbox" /> Say the slot name out loud</label>
+        <p class="hint" id="dataInfo"></p>
+      </section>
+    </main>
+
+    <nav class="tabs">
+      <button data-tab="scan" class="active" type="button">Scan</button>
+      <button data-tab="slots" type="button">Slots</button>
+      <button data-tab="log" type="button">Log</button>
+      <button data-tab="settings" type="button">Settings</button>
+    </nav>
+
+    <dialog id="setsDialog">
+      <form method="dialog">
+        <h2>Riftbound sets</h2>
+        <p class="hint">Only pick the sets in the boxes you're opening. Fewer sets = faster, more accurate scans.</p>
+        <div id="setsList"></div>
+        <div class="row spread">
+          <button value="cancel" type="submit">Cancel</button>
+          <button value="ok" class="primary" type="submit">Use these sets</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

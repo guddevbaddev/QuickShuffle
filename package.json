@@ -1,0 +1,29 @@
+{
+  "name": "quickshuffle",
+  "version": "1.0.0",
+  "description": "Scan Riftbound cards and sort them into break slots",
+  "scripts": {
+    "test": "vitest run",
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "build:db": "node scripts/build-db.ts",
+    "eval": "node scripts/eval.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/guddevbaddev/QuickShuffle.git"
+  },
+  "bugs": {
+    "url": "https://github.com/guddevbaddev/QuickShuffle/issues"
+  },
+  "homepage": "https://github.com/guddevbaddev/QuickShuffle#readme",
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "sharp": "^0.35.5",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
+  },
+  "type": "module"
+}
