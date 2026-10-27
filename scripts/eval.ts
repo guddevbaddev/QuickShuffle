@@ -2,12 +2,15 @@
 // lighting, colour cast, blur, glare, JPEG) and reports how often the matcher
 // picks the right card. Requires `npm run build:db` to have filled .cache/.
 //
-//   node scripts/eval.ts [SET...]     (default: OGN)
+//   node scripts/eval.ts [SET...] [--slots FILE]     (default: OGN)
+//
+// With --slots, also reports how often each card lands in the right break slot.
 
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import sharp from 'sharp';
 import { Matcher, baseName } from '../src/matcher.ts';
+import { parseSlots, slotsFor, type Slot } from '../src/slots.ts';
 import { REF_W, REF_H } from '../src/fingerprint.ts';
 import type { SetFile } from '../src/types.ts';
 
@@ -62,8 +65,21 @@ async function simulateCapture(img: Buffer, landscape: boolean): Promise<Uint8Ar
 }
 
 async function main() {
-  const sets = process.argv.slice(2);
+  const args = process.argv.slice(2);
+  const slotsArg = args.indexOf('--slots');
+  let slots: Slot[] | null = null;
+  if (slotsArg >= 0) {
+    slots = parseSlots(await readFile(args[slotsArg + 1], 'utf8'));
+    args.splice(slotsArg, 2);
+  }
+  const sets = args;
   if (sets.length === 0) sets.push('OGN');
+  const slotOf = (c: (typeof matcher.cards)[number]) => {
+    const i = slotsFor(c, slots ?? [], true)[0];
+    return i === undefined ? 'No slot' : slots![i].name;
+  };
+  let rightSlot = 0;
+  const slotFailures: string[] = [];
   const files: SetFile[] = [];
   for (const s of sets) files.push(JSON.parse(await readFile(path.join(ROOT, 'public', 'data', `cards-${s}.json`), 'utf8')));
   const matcher = new Matcher(files);
@@ -95,6 +111,10 @@ async function main() {
       failures.push(`${card.name}  ->  ${got.name}  (${res.best!.score.toFixed(3)}, margin ${res.margin.toFixed(3)})`);
     }
     if (got.tags.join('|') === card.tags.join('|')) sameTags++;
+    if (slots) {
+      if (slotOf(got) === slotOf(card)) rightSlot++;
+      else slotFailures.push(`${card.name} [${slotOf(card)}]  ->  ${got.name} [${slotOf(got)}]  (${res.best!.score.toFixed(3)})`);
+    }
   }
 
   // Captures with no card in the frame, for picking a rejection threshold.
@@ -119,7 +139,10 @@ async function main() {
   console.log(`correct score p5/p50: ${q(goodScores, 0.05)} / ${q(goodScores, 0.5)}`);
   console.log(`wrong score p50/p95: ${q(badScores, 0.5)} / ${q(badScores, 0.95)}`);
   console.log(`empty-frame score p50/max: ${q(emptyScores, 0.5)} / ${q(emptyScores, 1)}`);
-  if (failures.length) console.log('failures:\n  ' + failures.slice(0, 25).join('\n  '));
+  if (slots) {
+    console.log(`right slot ${pct(rightSlot)} (${rightSlot}/${total})`);
+    if (slotFailures.length) console.log('wrong slot:\n  ' + slotFailures.join('\n  '));
+  } else if (failures.length) console.log('failures:\n  ' + failures.slice(0, 25).join('\n  '));
 }
 
 await main();

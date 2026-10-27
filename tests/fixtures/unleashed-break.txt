@@ -1,0 +1,23 @@
+# Unleashed character break, in Whatnot listing order.
+Rengar
+Poppy
+Pyke
+Vex
+Baron Nashor
+Vi
+LeBlanc
+Jhin
+Lillia
+Ivern
+Master Yi
+Mystic Poro
+Veteran Poro
+Lonely Poro
+Kha'Zix
+Diana
+Pouty Poro
+Daring Poro
+Plundering Poro
+Alt Art Runes = type:rune & name:alternate art
+# Last, so champion and Baron epics stay with their slot.
+Epic = rarity:epic
