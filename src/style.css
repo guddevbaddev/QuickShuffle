@@ -192,3 +192,18 @@ dialog {
 }
 dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
 dialog h2 { margin-top: 0; }
+
+.slot-preview ol { list-style: none; margin: 0; padding: 0; counter-reset: slot; }
+.slot-preview li {
+  counter-increment: slot;
+  display: grid;
+  grid-template-columns: 2.2em 1fr auto;
+  column-gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+.slot-preview li::before { content: counter(slot); color: var(--muted); grid-row: span 3; }
+.slot-preview li.fallback::before { content: '–'; }
+.slot-preview li small { grid-column: 2 / 4; color: var(--muted); }
+.slot-preview .count { font-weight: 700; font-variant-numeric: tabular-nums; }
+.slot-preview li.empty .count, .warn-text { color: var(--warn) !important; }

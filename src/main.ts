@@ -1,7 +1,7 @@
 import './style.css';
 import { Matcher, type Match, type MatchResult } from './matcher.ts';
 import { Scanner } from './scanner.ts';
-import { championNames, holoMatters, parseSlots, slotsFor, type Slot } from './slots.ts';
+import { championNames, describeSlot, holoMatters, parseSlots, slotsFor, type Slot } from './slots.ts';
 import type { Card, GameIndex, SetFile } from './types.ts';
 
 interface LogEntry {
@@ -63,6 +63,11 @@ const settings: Settings = load<Settings>(STORE_KEY, {
 });
 let log: LogEntry[] = load<{ entries: LogEntry[] }>(LOG_KEY, { entries: [] }).entries;
 let slots: Slot[] = parseSlots(settings.slotsText);
+
+// Re-read the slot text against the loaded cards (card names decide some ambiguous phrases).
+function reparseSlots(): void {
+  slots = parseSlots(settings.slotsText, matcher.cards);
+}
 let index: GameIndex | null = null;
 const setFiles = new Map<string, SetFile>();
 const matcher = new Matcher();
@@ -95,6 +100,7 @@ async function loadSets(): Promise<void> {
       }),
   );
   matcher.setFiles(settings.sets.map((id) => setFiles.get(id)!).filter(Boolean));
+  reparseSlots();
   $('setsButton').textContent = settings.sets.join(' + ') + ' ▾';
   $('dataInfo').textContent = `${matcher.cards.length} cards loaded. Card data from riftcodex.com, updated ${index?.generated.slice(0, 10) ?? '?'}.`;
   renderSlotPreview();
@@ -128,10 +134,40 @@ function renderSlotPreview(): void {
   el.innerHTML = '';
   const head = document.createElement('p');
   head.className = 'hint';
-  head.textContent = `${slots.length} slots. Cards per slot in the selected sets:`;
+  head.textContent = `${slots.length} slots · cards each one gets in ${settings.sets.join(' + ')}:`;
   el.append(head);
-  slots.forEach((s, i) => el.append(pill(s.name, counts.get(i) ?? 0, i)));
-  el.append(pill(settings.fallback || 'No slot', counts.get(-1) ?? 0, -1));
+  const list = document.createElement('ol');
+  slots.forEach((s, i) => {
+    const li = document.createElement('li');
+    const n = counts.get(i) ?? 0;
+    const name = document.createElement('b');
+    name.textContent = s.name;
+    name.style.color = `hsl(${(i * 137.508) % 360} 70% 70%)`;
+    const count = document.createElement('span');
+    count.className = 'count';
+    count.textContent = String(n);
+    const how = document.createElement('small');
+    how.textContent = describeSlot(s);
+    li.append(name, count, how);
+    if (n === 0) {
+      const any = matcher.cards.some((c) => slotsFor(c, [s], true).length > 0);
+      const warn = document.createElement('small');
+      warn.className = 'warn-text';
+      warn.textContent = any
+        ? '⚠ Its cards all go to an earlier slot. Move it up if it should win.'
+        : '⚠ Matches no cards in these sets. Typo, a username, or the wrong set?';
+      li.append(warn);
+      li.classList.add('empty');
+    }
+    list.append(li);
+  });
+  const rest = document.createElement('li');
+  rest.className = 'fallback';
+  rest.innerHTML = '<b></b><span class="count"></span><small>everything else</small>';
+  rest.querySelector('b')!.textContent = settings.fallback || 'No slot';
+  rest.querySelector('.count')!.textContent = String(counts.get(-1) ?? 0);
+  list.append(rest);
+  el.append(list);
 }
 
 function pill(name: string, count: number, index: number): HTMLElement {
@@ -515,7 +551,7 @@ function wire(): void {
   slotsText.value = settings.slotsText;
   slotsText.addEventListener('input', () => {
     settings.slotsText = slotsText.value;
-    slots = parseSlots(settings.slotsText);
+    reparseSlots();
     saveSettings();
     renderSlotPreview();
   });
@@ -525,6 +561,15 @@ function wire(): void {
     slotsText.dispatchEvent(new Event('input'));
   };
   // Champions first so their signature spells and gear go to them; only other holo gear reaches the Gear slot.
+  $('pasteSlots').addEventListener('click', async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text.trim()) setSlotsText(text.trim());
+    } catch {
+      slotsText.focus();
+      alert('Paste your list into the box (long-press → Paste).');
+    }
+  });
   $('genChampions').addEventListener('click', () =>
     setSlotsText([...championNames(matcher.cards), 'Gear = type:gear & holo'].join('\n')),
   );

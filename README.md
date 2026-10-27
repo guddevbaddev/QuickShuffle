@@ -18,25 +18,42 @@ Riftbound card and it tells you, in big text, which break slot the card goes to.
 
 ## Slot syntax
 
+Paste your slot list straight from your listing. Emojis, prices and `1.`
+numbering are ignored:
+
 ```
-Jinx                              # cards tagged Jinx, or "Jinx" as a word in the name
-Zaun crew = ekko, viktor, tag:zaun   # any of the comma-separated terms
-Epic Jinx = jinx & rarity:epic    # & = all conditions must hold
-Jinx (no legend) = jinx & !type:legend   # ! = not
-Gear = type:gear & holo           # only holo gear; the scanner asks "Holo?"
+🔥🔥 Irelia & Fizz 🌀🐟 🔥🔥        # combo: + / & , | "and" all join characters
+⭐ Draven, Aphelios, Vex & Rell ⭐
+🐾 Poros 🐾                          # plurals are fine
+✨ Spells ✨                          # keywords: rarities, card types, domains,
+⚙️ Gear + Top Units ⚙️              #   holo/foil, alt art, overnumbered
+💠 Runes, Seals & Battlefields 💠
+Holo Gear                            # the scanner asks "Holo?" when it matters
+```
+
+**Which slot wins.** A slot that names the card (a champion, "Seals",
+"Mystic Poro") beats a broad category slot ("Gear", "Spells", "Epic"). So a
+champion keeps their epics and signature spells and gear, and a seal goes to
+"Runes, Seals & Battlefields" even though Gear is listed first. When two slots
+are equally specific, the higher line wins. The editor shows how many cards
+each slot gets in the selected sets and flags slots that match nothing (a typo,
+or a username line pasted by accident).
+
+For exact rules, use `name = terms`. Terms separated by commas mean "any of",
+`&` means "all of", and `!` means "not". Filters are `tag:` `name:` `domain:`
+`type:` `rarity:` `set:` `number:` `holo`.
+
+```
+Zaun crew = ekko, viktor, tag:zaun
+Jinx (no legend) = jinx & !type:legend
+Gear = type:gear & holo
 ```
 
 **Signature cards and holo gear.** Signature spells, units and gear carry their
-champion's tag, so they go to that champion's slot. "Fill with champions" adds
-`Gear = type:gear & holo` after the champions, so any other gear goes to the Gear
-slot only if it's holo. The camera can't tell holo from non-holo, so when the
-answer changes the slot the scan screen asks **Holo? / Not holo** with one tap.
-Rarities listed under Settings → "Always holo" (default Rare, Epic, Showcase)
-skip the question.
-
-Filters: `tag:` `name:` `domain:` `type:` `rarity:` `set:` `number:`.
-A card goes to the **first** slot it matches; anything else goes to the
-fallback slot ("No slot" by default).
+champion's tag, so they go to that champion's slot. The camera can't tell holo
+from non-holo, so when that changes the slot, the scan screen asks
+**Holo? / Not holo** with one tap. Rarities listed under Settings → "Always
+holo" (default Rare, Epic, Showcase) skip the question.
 
 ## How recognition works
 

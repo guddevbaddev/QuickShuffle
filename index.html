@@ -45,16 +45,15 @@
       <section id="tab-slots" class="tab">
         <h2>Break slots</h2>
         <p class="hint">
-          One slot per line, in priority order. A card goes to the first slot it matches.
-          <br /><code>Jinx</code> matches cards tagged Jinx or with Jinx in the name.
-          <br /><code>Zaun crew = ekko, viktor, tag:zaun</code> matches any listed term.
-          <br />Filters: <code>tag:</code> <code>name:</code> <code>domain:</code> <code>type:</code> <code>rarity:</code> <code>set:</code> <code>number:</code>,
-          join with <code>&amp;</code> for "all of", prefix <code>!</code> for "not".
-          <br /><code>Gear = type:gear &amp; holo</code> only takes holo gear. The camera can't see holo, so
-          the scanner asks "Holo?" when it decides the slot.
+          Paste your slot list, one slot per line, in the order you sold them. Emojis, prices and
+          numbering are ignored. <code>Ahri + Fizz</code> (or <code>/</code> <code>&amp;</code> <code>,</code> <code>and</code>) is a combo slot.
+          Words like <code>Epic</code>, <code>Holo Gear</code>, <code>Alt Art Runes</code> work too.
+          A slot that names a card (a champion, "Seals") beats a broad one ("Gear", "Epic"); otherwise
+          the higher line wins. Check the counts below the box.
         </p>
         <div class="row wrap">
-          <button id="genChampions" type="button">Fill with champions in selected sets</button>
+          <button id="pasteSlots" class="primary" type="button">Paste list</button>
+          <button id="genChampions" type="button">Fill with champions</button>
           <button id="genDomains" type="button">Fill with domains</button>
         </div>
         <textarea id="slotsText" rows="14" spellcheck="false" autocapitalize="off"></textarea>
@@ -62,7 +61,19 @@
           <span>Cards matching no slot go to</span>
           <input id="fallbackName" type="text" />
         </label>
-        <div id="slotPreview" class="preview"></div>
+        <div id="slotPreview" class="slot-preview"></div>
+        <details class="hint">
+          <summary>Exact rules (advanced)</summary>
+          <p>
+            Use <code>name = terms</code> for exact rules. Terms are separated by commas (any of them);
+            <code>&amp;</code> means "all of" here, and <code>!</code> means "not".
+            Filters: <code>tag:</code> <code>name:</code> <code>domain:</code> <code>type:</code>
+            <code>rarity:</code> <code>set:</code> <code>number:</code> <code>holo</code>.
+            <br /><code>Zaun crew = ekko, viktor, tag:zaun</code>
+            <br /><code>Jinx (no legend) = jinx &amp; !type:legend</code>
+            <br /><code>Gear = type:gear &amp; holo</code>: the camera can't see holo, so the scanner asks "Holo?" when it matters.
+          </p>
+        </details>
       </section>
 
       <section id="tab-log" class="tab">
