@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { championNames, parseSlots, slotsFor } from '../src/slots.ts';
+import { championNames, holoMatters, parseSlots, slotsFor } from '../src/slots.ts';
 import type { Card } from '../src/types.ts';
 
 const card = (over: Partial<Card>): Card => ({
@@ -37,6 +37,20 @@ describe('parseSlots / slotsFor', () => {
   });
 
   it('lists champion names from champion units and legends', () => {
-    expect(championNames([jinx, vi, viktor, spell])).toEqual(['Jinx', 'Vi', 'Viktor']);
+    const kennen = card({ name: 'Yordle, Kennen - Heart of the Tempest', type: 'Legend', tags: ['Yordle', 'Kennen'] });
+    const kaisa = card({ name: "Kai'Sa, Survivor", supertype: 'Champion', tags: ["Kai'Sa"] });
+    expect(championNames([jinx, vi, viktor, spell, kennen, kaisa])).toEqual(['Jinx', "Kai'Sa", 'Kennen', 'Vi', 'Viktor']);
+  });
+
+  it('sends signature gear to its champion and only holo gear to the gear slot', () => {
+    const slots = parseSlots('Vi\nGear = type:gear & holo');
+    const sigGear = card({ name: 'Hextech Gauntlets', type: 'Gear', supertype: 'Signature', tags: ['Vi', 'Equipment'] });
+    const gear = card({ name: 'Sun Disc', type: 'Gear', rarity: 'Uncommon' });
+    expect(slotsFor(sigGear, slots, false)).toEqual([0]);
+    expect(holoMatters(sigGear, slots)).toBe(false);
+    expect(slotsFor(gear, slots, true)).toEqual([1]);
+    expect(slotsFor(gear, slots, false)).toEqual([]);
+    expect(holoMatters(gear, slots)).toBe(true);
+    expect(holoMatters(vi, slots)).toBe(false);
   });
 });

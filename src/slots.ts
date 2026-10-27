@@ -7,7 +7,7 @@ export interface Slot {
 }
 
 interface Condition {
-  field: 'any' | 'name' | 'tag' | 'domain' | 'type' | 'rarity' | 'set' | 'number';
+  field: 'any' | 'name' | 'tag' | 'domain' | 'type' | 'rarity' | 'set' | 'number' | 'holo';
   value: string;
   negate: boolean;
 }
@@ -21,6 +21,8 @@ const FIELDS = new Set(['name', 'tag', 'domain', 'type', 'rarity', 'set', 'numbe
 //   Epics = rarity:epic        -> field filters: name tag domain type rarity set number
 //   Jinx foils = jinx & rarity:showcase   -> "&" joins conditions that must all hold
 //   Jinx no legend = jinx & !type:legend   -> "!" negates a condition
+//   Gear = type:gear & holo    -> "holo" (or "foil") can't be seen by the camera, so the
+//                                 scanner asks when the answer changes the slot
 //
 // Blank lines and lines starting with # are ignored.
 export function parseSlots(text: string): Slot[] {
@@ -48,6 +50,7 @@ function parseCondition(term: string): Condition | null {
     t = t.slice(1).trim();
   }
   if (!t) return null;
+  if (t === 'holo' || t === 'foil') return { field: 'holo', value: '', negate };
   const colon = t.indexOf(':');
   if (colon > 0 && FIELDS.has(t.slice(0, colon).trim())) {
     return { field: t.slice(0, colon).trim() as Condition['field'], value: t.slice(colon + 1).trim(), negate };
@@ -67,7 +70,7 @@ function containsWord(haystack: string, needle: string): boolean {
   return false;
 }
 
-function test(card: Card, c: Condition): boolean {
+function test(card: Card, c: Condition, holo: boolean): boolean {
   const v = c.value;
   const eq = (s: string | null | undefined) => (s ?? '').toLowerCase() === v;
   let hit: boolean;
@@ -79,31 +82,41 @@ function test(card: Card, c: Condition): boolean {
     case 'rarity': hit = eq(card.rarity); break;
     case 'set': hit = eq(card.set); break;
     case 'number': hit = String(card.num ?? '') === v; break;
+    case 'holo': hit = holo; break;
     default: hit = card.tags.some(eq) || containsWord(card.name, v);
   }
   return hit !== c.negate;
 }
 
-export function slotMatches(card: Card, slot: Slot): boolean {
-  return slot.rules.some((rule) => rule.every((c) => test(card, c)));
+export function slotMatches(card: Card, slot: Slot, holo = false): boolean {
+  return slot.rules.some((rule) => rule.every((c) => test(card, c, holo)));
 }
 
 // Indexes of every slot the card belongs to, in priority (line) order.
-export function slotsFor(card: Card, slots: Slot[]): number[] {
+export function slotsFor(card: Card, slots: Slot[], holo = false): number[] {
   const out: number[] = [];
   slots.forEach((s, i) => {
-    if (slotMatches(card, s)) out.push(i);
+    if (slotMatches(card, s, holo)) out.push(i);
   });
   return out;
 }
 
-// Champion names appearing in the given cards, for one-tap slot setup: tags of
-// champion units and legends whose name starts with that tag ("Jinx - Loose Cannon").
+// True when whether the card is holo decides which slot it goes to.
+export function holoMatters(card: Card, slots: Slot[]): boolean {
+  return (slotsFor(card, slots, true)[0] ?? -1) !== (slotsFor(card, slots, false)[0] ?? -1);
+}
+
+// Champion names appearing in the given cards, for one-tap slot setup. Champion
+// units and legends are named "Jinx - Loose Cannon", "Kai'Sa, Survivor" or
+// "Yordle, Kennen - Heart of the Tempest"; the champion is the tagged name in front.
 export function championNames(cards: Card[]): string[] {
   const names = new Set<string>();
   for (const c of cards) {
     if (c.type !== 'Legend' && c.supertype !== 'Champion') continue;
-    for (const t of c.tags) if (c.name.toLowerCase().startsWith(t.toLowerCase())) names.add(t);
+    const dash = c.name.indexOf(' - ');
+    const head = dash >= 0 ? c.name.slice(0, dash).split(', ').pop()! : c.name.split(', ')[0];
+    const tag = c.tags.find((t) => t.toLowerCase() === head.trim().toLowerCase());
+    if (tag) names.add(tag);
   }
   return [...names].sort((a, b) => a.localeCompare(b));
 }

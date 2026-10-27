@@ -1,7 +1,7 @@
 import './style.css';
 import { Matcher, type Match, type MatchResult } from './matcher.ts';
 import { Scanner } from './scanner.ts';
-import { championNames, parseSlots, slotsFor, type Slot } from './slots.ts';
+import { championNames, holoMatters, parseSlots, slotsFor, type Slot } from './slots.ts';
 import type { Card, GameIndex, SetFile } from './types.ts';
 
 interface LogEntry {
@@ -12,6 +12,7 @@ interface LogEntry {
   num: number | null;
   img: string;
   slot: string;
+  holo?: boolean;
 }
 
 interface Settings {
@@ -22,6 +23,8 @@ interface Settings {
   sound: boolean;
   vibrate: boolean;
   speak: boolean;
+  // Rarities that only exist as holo, so the scanner doesn't ask about them.
+  alwaysHolo: string;
 }
 
 const STORE_KEY = 'quickshuffle:v1';
@@ -56,6 +59,7 @@ const settings: Settings = load<Settings>(STORE_KEY, {
   sound: true,
   vibrate: true,
   speak: false,
+  alwaysHolo: 'Rare, Epic, Showcase',
 });
 let log: LogEntry[] = load<{ entries: LogEntry[] }>(LOG_KEY, { entries: [] }).entries;
 let slots: Slot[] = parseSlots(settings.slotsText);
@@ -98,8 +102,14 @@ async function loadSets(): Promise<void> {
 
 // ---------- slots ----------
 
-function slotNameFor(card: Card): { name: string; index: number; also: string[] } {
-  const hits = slotsFor(card, slots);
+// true/false when the rarity settles it, undefined when the scanner has to ask.
+function knownHolo(card: Card): boolean | undefined {
+  const always = settings.alwaysHolo.split(',').map((r) => r.trim().toLowerCase());
+  return always.includes(card.rarity.toLowerCase()) ? true : undefined;
+}
+
+function slotNameFor(card: Card, holo = knownHolo(card) ?? false): { name: string; index: number; also: string[] } {
+  const hits = slotsFor(card, slots, holo);
   if (hits.length === 0) return { name: settings.fallback || 'No slot', index: -1, also: [] };
   return { name: slots[hits[0]].name, index: hits[0], also: hits.slice(1).map((i) => slots[i].name) };
 }
@@ -163,7 +173,7 @@ function announce(slotIndex: number, slotName: string): void {
   }
 }
 
-function addEntry(card: Card): LogEntry {
+function addEntry(card: Card, holo?: boolean): LogEntry {
   const entry: LogEntry = {
     t: Date.now(),
     id: card.id,
@@ -171,7 +181,8 @@ function addEntry(card: Card): LogEntry {
     set: card.set,
     num: card.num,
     img: card.img,
-    slot: slotNameFor(card).name,
+    slot: slotNameFor(card, holo).name,
+    holo,
   };
   log.push(entry);
   saveLog();
@@ -181,17 +192,83 @@ function addEntry(card: Card): LogEntry {
 
 function onDetect(res: MatchResult): void {
   const best = res.best!;
-  addEntry(best.card);
   const slot = slotNameFor(best.card);
-  announce(slot.index, slot.name);
   // Close calls that would land in a different slot need a human look.
   const close = res.others.filter((o) => best.score - o.score <= AMBIGUOUS_GAP && slotNameFor(o.card).name !== slot.name);
-  renderResult(best, close.length ? [best, ...close] : [], res.others);
+  place(best, close.length ? [best, ...close] : [], res.others);
 }
 
-function renderResult(best: Match, choices: Match[], others: Match[]): void {
+// Logs the card and shows its slot, first asking "holo?" when that decides the slot.
+function place(match: Match, choices: Match[], others: Match[]): void {
+  const holo = knownHolo(match.card);
+  if (holo === undefined && holoMatters(match.card, slots)) {
+    askHolo(match, choices, others);
+    return;
+  }
+  finishPlace(match, choices, others, holo);
+}
+
+function finishPlace(match: Match, choices: Match[], others: Match[], holo: boolean | undefined): void {
+  addEntry(match.card, holo);
+  const slot = slotNameFor(match.card, holo);
+  announce(slot.index, slot.name);
+  renderResult(match, choices, others, holo);
+}
+
+let askingHolo = false;
+
+function askHolo(match: Match, choices: Match[], others: Match[]): void {
+  askingHolo = true;
+  updatePause();
+  beep(true);
+  if (settings.vibrate) navigator.vibrate?.([20, 40, 20]);
+  const el = $('result');
+  el.innerHTML = '';
+  el.classList.remove('warn');
+  el.style.setProperty('--slot', 'var(--warn)');
+  const banner = document.createElement('div');
+  banner.className = 'banner ask';
+  banner.innerHTML = '<div class="slot-name">Holo?</div>';
+  const info = cardInfo(match);
+  const answer = (holo: boolean) => {
+    askingHolo = false;
+    updatePause();
+    finishPlace(match, choices, others, holo);
+  };
+  const yes = slotNameFor(match.card, true);
+  const no = slotNameFor(match.card, false);
+  const row = document.createElement('div');
+  row.className = 'row answer';
+  const yesBtn = button('', () => answer(true), 'primary');
+  yesBtn.innerHTML = '<b>Holo</b><small></small>';
+  yesBtn.querySelector('small')!.textContent = `→ ${yes.name}`;
+  const noBtn = button('', () => answer(false));
+  noBtn.innerHTML = '<b>Not holo</b><small></small>';
+  noBtn.querySelector('small')!.textContent = `→ ${no.name}`;
+  row.append(yesBtn, noBtn);
+  el.append(banner, info, row);
+}
+
+function cardInfo(match: Match, holo?: boolean): HTMLElement {
+  const card = match.card;
+  const info = document.createElement('div');
+  info.className = 'card-info';
+  const img = document.createElement('img');
+  img.src = card.img;
+  img.alt = '';
+  img.loading = 'lazy';
+  const text = document.createElement('div');
+  text.innerHTML = `<b></b><small></small>`;
+  text.querySelector('b')!.textContent = card.name;
+  text.querySelector('small')!.textContent =
+    `${card.set} #${card.num ?? '?'} · ${card.rarity}${holo ? ' · holo' : ''} · ${Math.round(match.score * 100)}% match`;
+  info.append(img, text);
+  return info;
+}
+
+function renderResult(best: Match, choices: Match[], others: Match[], holo?: boolean): void {
   const card = best.card;
-  const slot = slotNameFor(card);
+  const slot = slotNameFor(card, holo);
   const el = $('result');
   el.innerHTML = '';
   el.style.setProperty('--slot', slotColor(slot.index));
@@ -208,17 +285,7 @@ function renderResult(best: Match, choices: Match[], others: Match[]): void {
   if (slot.also.length) sub.textContent += ` · also matches ${slot.also.join(', ')}`;
   banner.append(big, sub);
 
-  const info = document.createElement('div');
-  info.className = 'card-info';
-  const img = document.createElement('img');
-  img.src = card.img;
-  img.alt = '';
-  img.loading = 'lazy';
-  const text = document.createElement('div');
-  text.innerHTML = `<b></b><small></small>`;
-  text.querySelector('b')!.textContent = card.name;
-  text.querySelector('small')!.textContent = `${card.set} #${card.num ?? '?'} · ${card.rarity} · ${Math.round(best.score * 100)}% match`;
-  info.append(img, text);
+  const info = cardInfo(best, holo);
 
   const actions = document.createElement('div');
   actions.className = 'row';
@@ -232,10 +299,7 @@ function renderResult(best: Match, choices: Match[], others: Match[]): void {
       el.classList.remove('warn');
       el.style.removeProperty('--slot');
     }),
-    button('+1 again', () => {
-      addEntry(card);
-      announce(slot.index, slot.name);
-    }),
+    button('+1 again', () => place(best, [], others)),
     button('Fix', () => showChoices(el, [best, ...others], 'Pick the right card:')),
   );
 
@@ -256,10 +320,9 @@ function showChoices(el: HTMLElement, choices: Match[], title: string): void {
     list.append(
       cardRow(m.card, `${slotNameFor(m.card).name} · ${Math.round(m.score * 100)}%`, () => {
         log.pop();
-        addEntry(m.card);
-        const s = slotNameFor(m.card);
-        announce(s.index, s.name);
-        renderResult(m, [], []);
+        saveLog();
+        renderLog();
+        place(m, [], []);
       }),
     );
   }
@@ -342,7 +405,7 @@ function renderLog(): void {
   const list = $('logList');
   list.innerHTML = '';
   [...log].reverse().slice(0, 300).forEach((e) => {
-    const li = cardRow(e, e.slot, undefined, slotColor(slotIndex.get(e.slot) ?? -1));
+    const li = cardRow(e, e.holo ? `${e.slot} · holo` : e.slot, undefined, slotColor(slotIndex.get(e.slot) ?? -1));
     const del = button('✕', () => {
       log = log.filter((x) => x !== e);
       saveLog();
@@ -366,7 +429,10 @@ function logAsText(): string {
   return names
     .map((n) => {
       const counts = new Map<string, number>();
-      for (const e of bySlot.get(n)!) counts.set(e.name, (counts.get(e.name) ?? 0) + 1);
+      for (const e of bySlot.get(n)!) {
+        const label = e.holo ? `${e.name} (holo)` : e.name;
+        counts.set(label, (counts.get(label) ?? 0) + 1);
+      }
       const items = [...counts.entries()].map(([c, k]) => (k > 1 ? `${c} x${k}` : c));
       return `${n} (${bySlot.get(n)!.length}): ${items.join(', ')}`;
     })
@@ -412,11 +478,17 @@ $<HTMLDialogElement>('setsDialog').addEventListener('close', async () => {
 function showTab(name: string): void {
   document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.id === `tab-${name}`));
   document.querySelectorAll<HTMLButtonElement>('.tabs button').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
-  // Don't burn battery scanning while editing slots.
-  scanner.setPaused(name !== 'scan' || pausedByUser);
+  currentTab = name;
+  updatePause();
 }
 
 let pausedByUser = false;
+let currentTab = 'scan';
+
+// Don't burn battery scanning while editing slots, and hold off while a holo question is open.
+function updatePause(): void {
+  scanner.setPaused(pausedByUser || currentTab !== 'scan' || askingHolo);
+}
 
 function wire(): void {
   document.querySelectorAll<HTMLButtonElement>('.tabs button').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab!)));
@@ -424,7 +496,7 @@ function wire(): void {
   $('startCamera').addEventListener('click', startCamera);
   $('pauseButton').addEventListener('click', () => {
     pausedByUser = !pausedByUser;
-    scanner.setPaused(pausedByUser);
+    updatePause();
     $('pauseButton').textContent = pausedByUser ? 'Resume' : 'Pause';
     $('camera').classList.toggle('paused', pausedByUser);
   });
@@ -452,7 +524,10 @@ function wire(): void {
     slotsText.value = text;
     slotsText.dispatchEvent(new Event('input'));
   };
-  $('genChampions').addEventListener('click', () => setSlotsText(championNames(matcher.cards).join('\n')));
+  // Champions first so their signature spells and gear go to them; only other holo gear reaches the Gear slot.
+  $('genChampions').addEventListener('click', () =>
+    setSlotsText([...championNames(matcher.cards), 'Gear = type:gear & holo'].join('\n')),
+  );
   $('genDomains').addEventListener('click', () => {
     const domains = [...new Set(matcher.cards.flatMap((c) => c.domains))].sort();
     setSlotsText(domains.map((d) => `${d} = domain:${d.toLowerCase()}`).join('\n'));
@@ -473,6 +548,13 @@ function wire(): void {
     settings.threshold = Number(threshold.value);
     showThreshold();
     saveSettings();
+  });
+  const alwaysHolo = $<HTMLInputElement>('alwaysHolo');
+  alwaysHolo.value = settings.alwaysHolo;
+  alwaysHolo.addEventListener('input', () => {
+    settings.alwaysHolo = alwaysHolo.value;
+    saveSettings();
+    renderSlotPreview();
   });
   for (const key of ['sound', 'vibrate', 'speak'] as const) {
     const cb = $<HTMLInputElement>(`${key}On`);
@@ -495,10 +577,7 @@ function wire(): void {
       .forEach((c) =>
         list.append(
           cardRow(c, slotNameFor(c).name, () => {
-            addEntry(c);
-            const s = slotNameFor(c);
-            announce(s.index, s.name);
-            renderResult({ card: c, score: 1 }, [], []);
+            place({ card: c, score: 1 }, [], []);
             search.value = '';
             list.innerHTML = '';
           }),

@@ -149,6 +149,10 @@ code { background: var(--panel); padding: 1px 5px; border-radius: 4px; font-size
 .card-info small, .cardlist small { color: var(--muted); }
 .result .row { padding: 0 14px 4px; flex-wrap: wrap; }
 .result .row button { flex: 1; white-space: nowrap; padding: 8px; }
+.banner.ask { color: #111; text-shadow: none; }
+.result .row.answer button { min-height: 72px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.row.answer b { font-size: 1.3rem; }
+.row.answer small { opacity: 0.85; white-space: normal; }
 .choices { padding: 0 14px 10px; border-top: 1px solid var(--line); }
 .choices p { color: var(--warn); margin: 10px 0 0; }
 

@@ -50,6 +50,8 @@
           <br /><code>Zaun crew = ekko, viktor, tag:zaun</code> matches any listed term.
           <br />Filters: <code>tag:</code> <code>name:</code> <code>domain:</code> <code>type:</code> <code>rarity:</code> <code>set:</code> <code>number:</code>,
           join with <code>&amp;</code> for "all of", prefix <code>!</code> for "not".
+          <br /><code>Gear = type:gear &amp; holo</code> only takes holo gear. The camera can't see holo, so
+          the scanner asks "Holo?" when it decides the slot.
         </p>
         <div class="row wrap">
           <button id="genChampions" type="button">Fill with champions in selected sets</button>
@@ -81,6 +83,11 @@
           <span>Match strictness <b id="thresholdValue"></b></span>
           <input id="threshold" type="range" min="0.45" max="0.85" step="0.01" />
           <small>Lower accepts blurry scans faster; higher avoids wrong matches.</small>
+        </label>
+        <label class="field">
+          <span>Always holo (never ask)</span>
+          <input id="alwaysHolo" type="text" autocapitalize="words" />
+          <small>Rarities that only come as holo, comma separated. Others get a "Holo?" question when it matters.</small>
         </label>
         <label class="check"><input id="soundOn" type="checkbox" /> Beep on scan</label>
         <label class="check"><input id="vibrateOn" type="checkbox" /> Vibrate on scan</label>

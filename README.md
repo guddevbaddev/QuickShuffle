@@ -23,7 +23,16 @@ Jinx                              # cards tagged Jinx, or "Jinx" as a word in th
 Zaun crew = ekko, viktor, tag:zaun   # any of the comma-separated terms
 Epic Jinx = jinx & rarity:epic    # & = all conditions must hold
 Jinx (no legend) = jinx & !type:legend   # ! = not
+Gear = type:gear & holo           # only holo gear; the scanner asks "Holo?"
 ```
+
+**Signature cards and holo gear.** Signature spells, units and gear carry their
+champion's tag, so they go to that champion's slot. "Fill with champions" adds
+`Gear = type:gear & holo` after the champions, so any other gear goes to the Gear
+slot only if it's holo. The camera can't tell holo from non-holo, so when the
+answer changes the slot the scan screen asks **Holo? / Not holo** with one tap.
+Rarities listed under Settings → "Always holo" (default Rare, Epic, Showcase)
+skip the question.
 
 Filters: `tag:` `name:` `domain:` `type:` `rarity:` `set:` `number:`.
 A card goes to the **first** slot it matches; anything else goes to the
